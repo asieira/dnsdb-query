@@ -37,11 +37,12 @@ options = None
 locale.setlocale(locale.LC_ALL, '')
 
 class DnsdbClient(object):
-    def __init__(self, server, apikey, limit=None, json=False):
+    def __init__(self, server, apikey, limit=None, json=False, verify=False):
         self.server = server
         self.apikey = apikey
         self.limit = limit
         self.json = json
+        self.verify = verify
 
     def query_rrset(self, oname, rrtype=None, bailiwick=None):
         if bailiwick:
@@ -73,8 +74,7 @@ class DnsdbClient(object):
             params = '?limit=%d' % self.limit
         else:
             params = ""
-        #try:
-        response = requests.get(url, params=params, headers=headers, verify=cfg['VERIFY'])
+        response = requests.get(url, params=params, headers=headers, verify=self.verify)
         if (response.status_code != 200):
             sys.stderr.write(str(response.status_code) + " " + response.reason + "\n")
         else:
@@ -85,9 +85,6 @@ class DnsdbClient(object):
                     res.append(line)
                 else:
                     res.append(json.loads(line))
-        #except:
-        #    e = sys.exc_info()[0]
-        #    sys.stderr.write(str(e) + '\n')
         return res
 
 def sec_to_text(ts):
@@ -231,7 +228,7 @@ def main():
     else:
         cfg['VERIFY'] = False
  
-    client = DnsdbClient(cfg['DNSDB_SERVER'], cfg['APIKEY'], options.limit, options.json)
+    client = DnsdbClient(cfg['DNSDB_SERVER'], cfg['APIKEY'], options.limit, options.json, cfg['VERIFY'])
     if options.rrset:
         res_list = client.query_rrset(*options.rrset.split('/'))
         fmt_func = rrset_to_text
