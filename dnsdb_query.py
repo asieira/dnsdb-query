@@ -75,8 +75,9 @@ class DnsdbClient(object):
         else:
             params = ""
         response = requests.get(url, params=params, headers=headers, verify=self.verify)
-        if (response.status_code != 200):
+        if response.status_code != 200:
             sys.stderr.write(str(response.status_code) + " " + response.reason + "\n")
+            return res
         else:
             for line in response.iter_lines():
                 if not line:
