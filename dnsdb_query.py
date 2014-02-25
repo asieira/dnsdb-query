@@ -20,7 +20,7 @@ import optparse
 import os
 import sys
 import time
-import urllib2
+import requests
 from cStringIO import StringIO
 
 try:
@@ -68,23 +68,25 @@ class DnsdbClient(object):
     def _query(self, path):
         res = []
         url = '%s/lookup/%s' % (self.server, path)
+        headers = {'Accept': 'application/json', 'X-Api-Key': self.apikey}
+        #try:
         if self.limit:
-            url += '?limit=%d' % self.limit
-        req = urllib2.Request(url)
-        req.add_header('Accept', 'application/json')
-        req.add_header('X-Api-Key', self.apikey)
-        try:
-            http = urllib2.urlopen(req)
-            while True:
-                line = http.readline()
+            response = requests.get(url, params='?limit=%d' % self.limit, headers=headers, verify=False)
+        else:
+            response = requests.get(url, headers=headers, verify=False)
+        if (response.status_code != 200):
+            sys.stderr.write(str(response.status_code) + " " + response.reason)
+        else:
+            for line in response.iter_lines():
                 if not line:
                     break
                 if self.json:
                     res.append(line)
                 else:
                     res.append(json.loads(line))
-        except urllib2.HTTPError, e:
-            sys.stderr.write(str(e) + '\n')
+        #except:
+        #    e = sys.exc_info()[0]
+        #    sys.stderr.write(str(e) + '\n')
         return res
 
 def sec_to_text(ts):
