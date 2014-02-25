@@ -69,13 +69,14 @@ class DnsdbClient(object):
         res = []
         url = '%s/lookup/%s' % (self.server, path)
         headers = {'Accept': 'application/json', 'X-Api-Key': self.apikey}
-        #try:
         if self.limit:
-            response = requests.get(url, params='?limit=%d' % self.limit, headers=headers, verify=False)
+            params = '?limit=%d' % self.limit
         else:
-            response = requests.get(url, headers=headers, verify=False)
+            params = ""
+        #try:
+        response = requests.get(url, params=params, headers=headers, verify=cfg['VERIFY'])
         if (response.status_code != 200):
-            sys.stderr.write(str(response.status_code) + " " + response.reason)
+            sys.stderr.write(str(response.status_code) + " " + response.reason + "\n")
         else:
             for line in response.iter_lines():
                 if not line:
@@ -221,7 +222,15 @@ def main():
     if not 'APIKEY' in cfg:
         sys.stderr.write('dnsdb_query: APIKEY not defined in config file\n')
         sys.exit(1)
-
+    if not 'VERIFY' in cfg:
+        cfg['VERIFY'] = False
+    elif cfg['VERIFY'].lower() in ['true', '1', 't', 'y', 'yes']: 
+        cfg['VERIFY'] = True
+        if 'CA_BUNDLE' in cfg:
+            cfg['VERIFY'] = cfg['CA_BUNDLE']
+    else:
+        cfg['VERIFY'] = False
+ 
     client = DnsdbClient(cfg['DNSDB_SERVER'], cfg['APIKEY'], options.limit, options.json)
     if options.rrset:
         res_list = client.query_rrset(*options.rrset.split('/'))
